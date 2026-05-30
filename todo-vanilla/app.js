@@ -1,6 +1,6 @@
 /* ==============================
   Todo 앱 - app.js
-  기본 CRUD + 필터 + 일간 뷰 기능
+  기본 CRUD + 필터 + 일간 뷰 + 로컬스토리지 연동
    ============================== */
 
 // ── DOM 요소 참조 ───────────────────────────────────────
@@ -13,10 +13,10 @@ const emptyMessage   = document.getElementById('emptyMessage');
 const completedCount = document.getElementById('completedCount');
 const totalCount     = document.getElementById('totalCount');
 const filterTabs     = document.querySelectorAll('.filter-tab');
-const prevDateBtn    = document.getElementById('prevDateBtn');   // 이전 날짜 버튼
-const nextDateBtn    = document.getElementById('nextDateBtn');   // 다음 날짜 버튼
-const dateLabel      = document.getElementById('dateLabel');     // 날짜 텍스트
-const todayBadge     = document.getElementById('todayBadge');    // '오늘' 뱃지
+const prevDateBtn    = document.getElementById('prevDateBtn');
+const nextDateBtn    = document.getElementById('nextDateBtn');
+const dateLabel      = document.getElementById('dateLabel');
+const todayBadge     = document.getElementById('todayBadge');
 
 // ── 상태 (State) ────────────────────────────────────────
 /**
@@ -25,7 +25,7 @@ const todayBadge     = document.getElementById('todayBadge');    // '오늘' 뱃
  *   id: number,
  *   text: string,
  *   completed: boolean,
- *   date: string  // 'YYYY-MM-DD' 형식으로 저장 
+ *   date: string  // 'YYYY-MM-DD'
  * }
  */
 let todos = [];
@@ -38,27 +38,56 @@ let currentFilter = 'all';
 
 /**
  * selectedDate: 현재 선택된 날짜 (Date 객체)
- * 처음엔 오늘 날짜로 초기화
  */
 let selectedDate = new Date();
+
+// ── 로컬스토리지 함수 ────────────────────────────────────
+
+/**
+ * todos 배열 전체를 로컬스토리지에 저장
+ * - JSON.stringify로 배열 → 문자열 변환 후 저장
+ * - CRUD 동작이 끝날 때마다 호출
+ */
+/* localStorage - 내장 객체 */
+function saveTodos() {
+  localStorage.setItem('todos', JSON.stringify(todos));
+}
+
+/**
+ * 로컬스토리지에서 todos 데이터를 불러와 복원
+ * - JSON.parse로 문자열 → 배열로 변환
+ * - 저장된 데이터가 없으면 빈 배열 유지
+ * - 페이지 최초 로드 시 한 번만 호출
+ */
+function loadTodos() {
+  const saved = localStorage.getItem('todos');
+
+  // 저장된 데이터가 있을 때만 파싱 (없으면 null 반환)
+  if (saved) {
+    todos = JSON.parse(saved);
+
+    // 불러온 todos를 전부 DOM에 렌더링
+    // prepend = false: 저장된 순서 그대로 아래에 쌓음
+    todos.forEach(todo => renderTodoItem(todo, false));
+  }
+}
 
 // ── 날짜 유틸리티 함수 ───────────────────────────────────
 
 /**
  * Date 객체를 'YYYY-MM-DD' 문자열로 변환
- * - Todo의 date 필드에 저장할 때 사용
  * @param {Date} date
- * @returns {string} 'YYYY-MM-DD'
+ * @returns {string}
  */
 function formatDateKey(date) {
   const year  = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const day   = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 /**
- * Date 객체를 화면에 표시할 형식으로 변환
+ * Date 객체를 화면 표시용 문자열로 변환
  * 예: '2025년 6월 3일 (화)'
  * @param {Date} date
  * @returns {string}
@@ -68,7 +97,7 @@ function formatDateDisplay(date) {
   const year  = date.getFullYear();
   const month = date.getMonth() + 1;
   const day   = date.getDate();
-  const dow   = dayNames[date.getDay()]; // 요일 (0=일 ~ 6=토)
+  const dow   = dayNames[date.getDay()];
   return `${year}년 ${month}월 ${day}일 (${dow})`;
 }
 
@@ -84,8 +113,6 @@ function isSameDay(a, b) {
 
 /**
  * 날짜 네비게이터 UI 업데이트
- * - 날짜 텍스트 갱신
- * - 오늘이면 '오늘' 뱃지 표시
  */
 function updateDateNavigator() {
   dateLabel.textContent = formatDateDisplay(selectedDate);
@@ -111,28 +138,24 @@ function showErrorMessage() {
   }, 2500);
 }
 
-/**
- * 헤더 카운트 업데이트
- * - 선택된 날짜 기준으로만 집계
- */
+/* completed가 true인 todo들을 filter로 걸렀을 때의 개수 */
 function updateCount() {
-  const selectedKey     = formatDateKey(selectedDate);
-  const todayTodos      = todos.filter(t => t.date === selectedKey);
-  const total           = todayTodos.length;
-  const completed       = todayTodos.filter(t => t.completed).length;
+  const selectedKey = formatDateKey(selectedDate);
+  const todayTodos  = todos.filter(t => t.date === selectedKey);
+  const total       = todayTodos.length;
+  const completed   = todayTodos.filter(t => t.completed).length;
   totalCount.textContent     = total;
   completedCount.textContent = completed;
 }
 
 /**
  * 빈 상태 안내 표시 여부 토글
- * - 선택된 날짜 + 현재 필터 기준으로 보이는 항목이 없을 때 표시
  */
 function toggleEmptyState() {
   const selectedKey = formatDateKey(selectedDate);
 
   const visibleCount = todos.filter(todo => {
-    if (todo.date !== selectedKey) return false; // 날짜 먼저 필터
+    if (todo.date !== selectedKey) return false;
     if (currentFilter === 'all')       return true;
     if (currentFilter === 'active')    return !todo.completed;
     if (currentFilter === 'completed') return todo.completed;
@@ -167,7 +190,6 @@ function escapeHtml(str) {
 
 /**
  * 현재 선택된 날짜 + 필터 기준으로 각 항목 show/hide
- * - 날짜가 다르거나 필터 조건에 안 맞으면 숨김
  */
 function applyFilter() {
   const selectedKey = formatDateKey(selectedDate);
@@ -178,7 +200,6 @@ function applyFilter() {
     const todo = todos.find(t => t.id === id);
     if (!todo) return;
 
-    // 날짜 조건 + 상태 필터 조건 둘 다 만족해야 표시
     const matchesDate   = todo.date === selectedKey;
     const matchesFilter =
       currentFilter === 'all' ||
@@ -194,8 +215,8 @@ function applyFilter() {
 // ── 날짜 이동 함수 ────────────────────────────────────────
 
 /**
- * 날짜를 offset만큼 이동 (이전: -1, 다음: +1)
- * @param {number} offset - 이동할 일수
+ * 날짜를 offset만큼 이동
+ * @param {number} offset
  */
 function moveDate(offset) {
   selectedDate.setDate(selectedDate.getDate() + offset);
@@ -208,7 +229,6 @@ function moveDate(offset) {
 
 /**
  * [CREATE] 새로운 Todo 추가
- * - 현재 선택된 날짜를 date 필드에 함께 저장
  */
 function addTodo() {
   const inputText = todoInput.value.trim();
@@ -223,7 +243,7 @@ function addTodo() {
     id: generateId(),
     text: inputText,
     completed: false,
-    date: formatDateKey(selectedDate) // 선택된 날짜 저장
+    date: formatDateKey(selectedDate)
   };
 
   todos.unshift(newTodo);
@@ -232,6 +252,7 @@ function addTodo() {
   todoInput.value = '';
   todoInput.focus();
 
+  saveTodos(); // 추가 후 저장
   updateCount();
   applyFilter();
 }
@@ -313,6 +334,7 @@ function toggleComplete(id) {
   checkbox.classList.toggle('checked', todo.completed);
   checkbox.setAttribute('aria-checked', todo.completed);
 
+  saveTodos(); // 완료 상태 변경 후 저장
   updateCount();
   applyFilter();
 }
@@ -388,6 +410,8 @@ function saveEdit(li, id, editInput, saveBtn) {
 
   saveBtn.replaceWith(saveBtn.cloneNode(true));
   attachEditButton(li, id);
+
+  saveTodos(); // 수정 내용 저장
 }
 
 /**
@@ -412,6 +436,7 @@ function cancelEdit(id, li, editInput, saveBtn) {
 
   saveBtn.replaceWith(saveBtn.cloneNode(true));
   attachEditButton(li, id);
+  // 취소는 데이터 변경이 없으므로 saveTodos() 호출 불필요
 }
 
 /**
@@ -421,6 +446,8 @@ function cancelEdit(id, li, editInput, saveBtn) {
  */
 function deleteTodo(id, li) {
   todos = todos.filter(t => t.id !== id);
+
+  saveTodos(); // 삭제 후 저장
 
   li.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
   li.style.opacity    = '0';
@@ -446,8 +473,8 @@ filterTabs.forEach(tab => {
 
 // ── 날짜 네비게이터 이벤트 등록 ──────────────────────────
 
-prevDateBtn.addEventListener('click', () => moveDate(-1)); // 하루 이전
-nextDateBtn.addEventListener('click', () => moveDate(+1)); // 하루 다음
+prevDateBtn.addEventListener('click', () => moveDate(-1));
+nextDateBtn.addEventListener('click', () => moveDate(+1));
 
 // ── 이벤트 리스너 등록 ────────────────────────────────────
 
@@ -464,6 +491,7 @@ todoInput.addEventListener('input', () => {
 });
 
 // ── 초기 렌더링 ──────────────────────────────────────────
-updateDateNavigator(); // 오늘 날짜로 네비게이터 초기화
-toggleEmptyState();
+updateDateNavigator();
+loadTodos();   // 로컬스토리지에서 데이터 복원 (renderTodoItem 포함)
+applyFilter(); // 복원 후 현재 날짜 + 필터 적용
 updateCount();
