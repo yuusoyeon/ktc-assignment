@@ -1,22 +1,26 @@
 /* ==============================
   Todo 앱 - app.js
-  기본 CRUD + 필터 + 일간 뷰 + 로컬스토리지 연동
+  기본 CRUD + 필터 + 일간 뷰 + 주간 뷰 + 로컬스토리지
    ============================== */
 
 // ── DOM 요소 참조 ───────────────────────────────────────
-const todoInput      = document.getElementById('todoInput');
-const addButton      = document.getElementById('addButton');
-const errorMessage   = document.getElementById('errorMessage');
-const todoList       = document.getElementById('todoList');
-const emptyState     = document.getElementById('emptyState');
-const emptyMessage   = document.getElementById('emptyMessage');
-const completedCount = document.getElementById('completedCount');
-const totalCount     = document.getElementById('totalCount');
-const filterTabs     = document.querySelectorAll('.filter-tab');
-const prevDateBtn    = document.getElementById('prevDateBtn');
-const nextDateBtn    = document.getElementById('nextDateBtn');
-const dateLabel      = document.getElementById('dateLabel');
-const todayBadge     = document.getElementById('todayBadge');
+const todoInput       = document.getElementById('todoInput');
+const addButton       = document.getElementById('addButton');
+const errorMessage    = document.getElementById('errorMessage');
+const todoList        = document.getElementById('todoList');
+const emptyState      = document.getElementById('emptyState');
+const emptyMessage    = document.getElementById('emptyMessage');
+const completedCount  = document.getElementById('completedCount');
+const totalCount      = document.getElementById('totalCount');
+const filterTabs      = document.querySelectorAll('.filter-tab');
+const prevDateBtn     = document.getElementById('prevDateBtn');
+const nextDateBtn     = document.getElementById('nextDateBtn');
+const dateLabel       = document.getElementById('dateLabel');
+const todayBadge      = document.getElementById('todayBadge');
+const prevWeekBtn     = document.getElementById('prevWeekBtn');    // 이전 주 버튼
+const nextWeekBtn     = document.getElementById('nextWeekBtn');    // 다음 주 버튼
+const weekRangeLabel  = document.getElementById('weekRangeLabel'); // 주차 범위 텍스트
+const weekDaysEl      = document.getElementById('weekDays');       // 날짜 셀 컨테이너
 
 // ── 상태 (State) ────────────────────────────────────────
 /**
@@ -41,23 +45,26 @@ let currentFilter = 'all';
  */
 let selectedDate = new Date();
 
+/**
+ * weekOffset: 현재 보고 있는 주차 오프셋
+ * 0 = 이번 주, -1 = 지난 주, +1 = 다음 주
+ */
+let weekOffset = 0;
+
 // ── 로컬스토리지 함수 ────────────────────────────────────
 
 /**
  * todos 배열 전체를 로컬스토리지에 저장
- * - JSON.stringify로 배열 → 문자열 변환 후 저장
- * - CRUD 동작이 끝날 때마다 호출
+ * JSON.stringify로 배열 → 문자열 변환
  */
-/* localStorage - 내장 객체 */
 function saveTodos() {
   localStorage.setItem('todos', JSON.stringify(todos));
 }
 
 /**
  * 로컬스토리지에서 todos 데이터를 불러와 복원
- * - JSON.parse로 문자열 → 배열로 변환
- * - 저장된 데이터가 없으면 빈 배열 유지
- * - 페이지 최초 로드 시 한 번만 호출
+ * JSON.parse로 문자열 → 배열 변환
+ * 페이지 최초 로드 시 한 번만 호출
  */
 function loadTodos() {
   const saved = localStorage.getItem('todos');
@@ -65,9 +72,7 @@ function loadTodos() {
   // 저장된 데이터가 있을 때만 파싱 (없으면 null 반환)
   if (saved) {
     todos = JSON.parse(saved);
-
-    // 불러온 todos를 전부 DOM에 렌더링
-    // prepend = false: 저장된 순서 그대로 아래에 쌓음
+    // 불러온 todos를 전부 DOM에 렌더링 (저장된 순서 그대로)
     todos.forEach(todo => renderTodoItem(todo, false));
   }
 }
@@ -81,7 +86,7 @@ function loadTodos() {
  */
 function formatDateKey(date) {
   const year  = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1
   const day   = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
@@ -97,7 +102,7 @@ function formatDateDisplay(date) {
   const year  = date.getFullYear();
   const month = date.getMonth() + 1;
   const day   = date.getDate();
-  const dow   = dayNames[date.getDay()];
+  const dow   = dayNames[date.getDay()]; // 요일 (0=일 ~ 6=토)
   return `${year}년 ${month}월 ${day}일 (${dow})`;
 }
 
@@ -122,6 +127,102 @@ function updateDateNavigator() {
   } else {
     todayBadge.classList.add('hidden');
   }
+}
+
+// ── 주간 뷰 함수 ─────────────────────────────────────────
+
+/**
+ * 기준 날짜가 속한 주의 월요일 Date 객체를 반환
+ * - JS의 getDay(): 0=일, 1=월 ... 6=토
+ * - 월요일 기준으로 맞추려면: (요일 + 6) % 7 로 월요일로부터의 거리를 구함
+ * @param {Date} date
+ * @returns {Date} 해당 주 월요일
+ */
+function getMonday(date) {
+  const d      = new Date(date);
+  const day    = d.getDay();
+  const diff   = (day + 6) % 7; // 월요일로부터 며칠 뒤인지
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * 주간 뷰 전체를 렌더링
+ * - weekOffset에 따라 기준 주의 월요일을 계산
+ * - 월~일 7개 셀을 동적으로 생성
+ */
+function renderWeekView() {
+  // 오늘 기준으로 weekOffset 주만큼 이동한 날의 월요일 계산
+  const baseDate = new Date();
+  baseDate.setDate(baseDate.getDate() + weekOffset * 7);
+  const monday = getMonday(baseDate);
+
+  // 주차 범위 텍스트 업데이트 (예: 2025.6.2 ~ 2025.6.8)
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  weekRangeLabel.textContent =
+    `${monday.getFullYear()}.${monday.getMonth() + 1}.${monday.getDate()}` +
+    ` ~ ` +
+    `${sunday.getFullYear()}.${sunday.getMonth() + 1}.${sunday.getDate()}`;
+
+  // 기존 셀 초기화
+  weekDaysEl.innerHTML = '';
+
+  const dayNames  = ['월', '화', '수', '목', '금', '토', '일'];
+  const todayKey  = formatDateKey(new Date());
+  const selectedKey = formatDateKey(selectedDate);
+
+  // 월(0) ~ 일(6) 셀 7개 생성
+  for (let i = 0; i < 7; i++) {
+    const cellDate = new Date(monday);
+    cellDate.setDate(monday.getDate() + i);
+    const cellKey = formatDateKey(cellDate);
+
+    // 해당 날짜의 Todo 개수 계산
+    const count = todos.filter(t => t.date === cellKey).length;
+
+    const cell = document.createElement('div');
+    cell.classList.add('week-day-cell');
+    cell.dataset.dateKey = cellKey; // 클릭 시 날짜 식별용
+
+    // 오늘 날짜 강조 클래스
+    if (cellKey === todayKey)    cell.classList.add('is-today');
+    // 현재 선택된 날짜 강조 클래스
+    if (cellKey === selectedKey) cell.classList.add('is-selected');
+
+    cell.innerHTML = `
+      <span class="week-day-name">${dayNames[i]}</span>
+      <span class="week-day-num">${cellDate.getDate()}</span>
+      <span class="week-day-count ${count > 0 ? 'has-todos' : ''}">${count > 0 ? count : ''}</span>
+    `;
+
+    // 셀 클릭 → 해당 날짜로 이동
+    cell.addEventListener('click', () => {
+      selectedDate = new Date(cellDate);
+      updateDateNavigator();
+      renderWeekView();  // 선택 표시 갱신
+      applyFilter();
+      updateCount();
+    });
+
+    weekDaysEl.appendChild(cell);
+  }
+}
+
+/**
+ * 주간 뷰의 Todo 개수 뱃지만 갱신
+ * - Todo 추가/삭제/완료 시 전체 재렌더링 없이 개수만 업데이트
+ */
+function updateWeekCounts() {
+  const cells = weekDaysEl.querySelectorAll('.week-day-cell');
+  cells.forEach(cell => {
+    const key   = cell.dataset.dateKey;
+    const count = todos.filter(t => t.date === key).length;
+    const badge = cell.querySelector('.week-day-count');
+    badge.textContent = count > 0 ? count : '';
+    badge.classList.toggle('has-todos', count > 0);
+  });
 }
 
 // ── 유틸리티 함수 ────────────────────────────────────────
@@ -215,14 +316,34 @@ function applyFilter() {
 // ── 날짜 이동 함수 ────────────────────────────────────────
 
 /**
- * 날짜를 offset만큼 이동
+ * 일간 뷰 날짜를 offset만큼 이동
+ * - 날짜가 현재 주간 뷰 범위를 벗어나면 weekOffset도 자동 조정
  * @param {number} offset
  */
 function moveDate(offset) {
   selectedDate.setDate(selectedDate.getDate() + offset);
+
+  // 선택 날짜가 현재 주간 뷰 범위를 벗어났는지 확인 후 주간 뷰 동기화
+  syncWeekToSelectedDate();
+
   updateDateNavigator();
+  renderWeekView();
   applyFilter();
   updateCount();
+}
+
+/**
+ * selectedDate에 맞게 weekOffset을 조정
+ * - 일간 뷰에서 날짜를 넘겼을 때 주간 뷰도 따라오게 함
+ */
+function syncWeekToSelectedDate() {
+  const baseDate = new Date();
+  const thisMonday    = getMonday(baseDate);
+  const selectedMonday = getMonday(selectedDate);
+
+  // 두 월요일의 날짜 차이를 일(day) 단위로 계산 → 주(week) 단위로 변환
+  const diffDays  = Math.round((selectedMonday - thisMonday) / (1000 * 60 * 60 * 24));
+  weekOffset = Math.round(diffDays / 7);
 }
 
 // ── 핵심 CRUD 함수 ────────────────────────────────────────
@@ -243,7 +364,7 @@ function addTodo() {
     id: generateId(),
     text: inputText,
     completed: false,
-    date: formatDateKey(selectedDate)
+    date: formatDateKey(selectedDate) // 선택된 날짜 저장
   };
 
   todos.unshift(newTodo);
@@ -252,8 +373,9 @@ function addTodo() {
   todoInput.value = '';
   todoInput.focus();
 
-  saveTodos(); // 추가 후 저장
+  saveTodos();       // 저장
   updateCount();
+  updateWeekCounts(); // 주간 뷰 개수 갱신
   applyFilter();
 }
 
@@ -384,6 +506,7 @@ function enterEditMode(li, id) {
 
 /**
  * [UPDATE - 저장]
+ * - 빈 값이면 저장하지 않고 오류 메시지 표시
  * @param {HTMLElement} li
  * @param {number}      id
  * @param {HTMLElement} editInput
@@ -391,7 +514,10 @@ function enterEditMode(li, id) {
  */
 function saveEdit(li, id, editInput, saveBtn) {
   const newText = editInput.value.trim();
+
+  // 빈 값이면 저장 거부 + 오류 메시지 표시 (추가할 때와 동일한 제한)
   if (newText === '') {
+    showErrorMessage();
     editInput.focus();
     return;
   }
@@ -447,7 +573,9 @@ function cancelEdit(id, li, editInput, saveBtn) {
 function deleteTodo(id, li) {
   todos = todos.filter(t => t.id !== id);
 
-  saveTodos(); // 삭제 후 저장
+  saveTodos();       // 삭제 후 저장
+  updateCount();
+  updateWeekCounts(); // 주간 뷰 개수 갱신
 
   li.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
   li.style.opacity    = '0';
@@ -456,8 +584,6 @@ function deleteTodo(id, li) {
     li.remove();
     toggleEmptyState();
   }, 180);
-
-  updateCount();
 }
 
 // ── 필터 탭 이벤트 등록 ──────────────────────────────────
@@ -476,6 +602,18 @@ filterTabs.forEach(tab => {
 prevDateBtn.addEventListener('click', () => moveDate(-1));
 nextDateBtn.addEventListener('click', () => moveDate(+1));
 
+// ── 주간 뷰 이벤트 등록 ──────────────────────────────────
+
+prevWeekBtn.addEventListener('click', () => {
+  weekOffset--;
+  renderWeekView();
+});
+
+nextWeekBtn.addEventListener('click', () => {
+  weekOffset++;
+  renderWeekView();
+});
+
 // ── 이벤트 리스너 등록 ────────────────────────────────────
 
 addButton.addEventListener('click', addTodo);
@@ -492,6 +630,7 @@ todoInput.addEventListener('input', () => {
 
 // ── 초기 렌더링 ──────────────────────────────────────────
 updateDateNavigator();
-loadTodos();   // 로컬스토리지에서 데이터 복원 (renderTodoItem 포함)
-applyFilter(); // 복원 후 현재 날짜 + 필터 적용
+loadTodos();     // 로컬스토리지 복원
+renderWeekView(); // 주간 뷰 초기 렌더링 (loadTodos 이후 → 개수 표시 정확)
+applyFilter();
 updateCount();

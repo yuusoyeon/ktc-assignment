@@ -21,7 +21,18 @@
       </p>
     </header>
 
-    <!-- 일간 날짜 네비게이터 (신규 추가) -->
+    <!-- 주간 뷰 (신규 추가) -->
+    <div class="week-navigator">
+      <div class="week-header">
+        <button id="prevWeekBtn" class="week-nav-btn" title="이전 주">&#8249;</button>
+        <span id="weekRangeLabel" class="week-range-label"></span>
+        <button id="nextWeekBtn" class="week-nav-btn" title="다음 주">&#8250;</button>
+      </div>
+      <!-- 월~일 날짜 셀 7개 (app.js에서 동적으로 생성) -->
+      <div id="weekDays" class="week-days"></div>
+    </div>
+
+    <!-- 일간 날짜 네비게이터 -->
     <div class="date-navigator">
       <button id="prevDateBtn" class="date-nav-btn" title="이전 날짜">&#8249;</button>
       <div class="date-display">
