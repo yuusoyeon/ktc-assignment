@@ -118,7 +118,7 @@ export default function App() {
     <main className="min-h-screen bg-[#f7f5fb] px-4 py-6 text-[#1a1625]">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
         <header className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-normal">Todo</h1>
+          <h1 className="text-2xl font-bold text-[#672be0] tracking-normal italic">Todo List</h1>
           <p className="text-sm font-medium text-[#8c82a3]">
             {formatDateDisplay(selectedDate)}
           </p>
