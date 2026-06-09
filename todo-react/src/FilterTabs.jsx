@@ -6,7 +6,7 @@ const FILTERS = [
 
 export default function FilterTabs({ currentFilter, onChangeFilter }) {
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-lg bg-[#f3f0f8] p-1">
+    <div className="flex w-full justify-around items-center gap-3 py-2">
       {FILTERS.map((filter) => {
         const isActive = currentFilter === filter.key;
 
@@ -16,13 +16,12 @@ export default function FilterTabs({ currentFilter, onChangeFilter }) {
             type="button"
             onClick={() => onChangeFilter(filter.key)}
             className={`
-              h-9 rounded-md text-sm font-semibold
-              transition-colors duration-200
+              h-10 flex-1 rounded-full text-[0.88rem] outline-none border-none transition-all duration-200
               ${
-                isActive
-                  ? "bg-white text-[#672be0] shadow-sm"
-                  : "text-[#8c82a3] hover:bg-white/70 hover:text-[#1a1625]"
-              }
+                    isActive
+                      ? "bg-[#672be0] text-white shadow-sm shadow-[rgba(103,43,224,0.2)] text-[#f4f5f0]"
+                      : "bg-transparent text-[#8c82a3] hover:bg-[rgba(103,43,224,0.06)] hover:text-[#672be0]"
+                  }
             `}
           >
             {filter.label}

@@ -15,16 +15,17 @@ export default function TodoList({
 }) {
   if (todos.length === 0) {
     return (
-      <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed border-[#d8d1e6] bg-[#faf9fd] px-4 text-center">
-        <p className="text-sm font-medium text-[#8c82a3]">
-          {getEmptyMessage(currentFilter)}
-        </p>
-      </div>
+      <section className="rounded-[20px] border border-[#e4dfef] bg-[#ffffff] px-6 py-[52px] text-center text-[0.9rem] leading-[1.7] text-[#8c82a3] shadow-[0_4px_24px_rgba(103,43,224,0.07)]">
+        <span className="mb-3 block text-[1.6rem] text-[#672be0] opacity-40">
+          +
+        </span>
+        <p className="whitespace-pre-line">{getEmptyMessage(currentFilter)}</p>
+      </section>
     );
   }
 
   return (
-    <ul className="space-y-2">
+    <ul style={{ paddingLeft: "0px" }} className="flex justify-start list-none flex-col gap-2.5">
       {todos.map((todo) => (
         <TodoItem
           key={todo.id}

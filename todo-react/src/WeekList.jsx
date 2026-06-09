@@ -87,7 +87,7 @@ export default function WeekList({
   const weekRangeLabel = `${monday.getFullYear()}.${monday.getMonth() + 1}.${monday.getDate()} ~ ${sunday.getFullYear()}.${sunday.getMonth() + 1}.${sunday.getDate()}`;
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e4dfef] shadow-[0_4px_24px_rgba(103,43,224,0.07)] p-4">
+    <div className="bg-[#ffffff] rounded-2xl border border-[#e4dfef] shadow-[0_4px_24px_rgba(103,43,224,0.07)] p-4">
       {/* ── 주차 헤더: 이전/다음 버튼 + 범위 텍스트 ── */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -105,7 +105,7 @@ export default function WeekList({
         </button>
 
         {/* 주차 범위 텍스트 */}
-        <span className="font-mono text-sm font-medium text-[#1a1625] tracking-tight">{weekRangeLabel}</span>
+        <span className="font-mono text-sm  font-medium text-[#1a1625] tracking-tight">{weekRangeLabel}</span>
 
         <button
           className="
@@ -136,28 +136,27 @@ export default function WeekList({
           const isToday = dateKey === todayKey;
           const isSelected = dateKey === selectedKey;
 
+          const cellBg = "hover:bg-[rgba(103,43,224,0.04)]";
+          
           let numStyle = "";
           if (isSelected) {
             // [선택된 날짜] 강조: 진한 보라 배경 + 흰 글자
-            numStyle = "bg-[#672be0] text-white";
+            numStyle = "bg-[#672be0] text-white shadow-sm shadow-[rgba(103,43,224,0.2)]";
           } else if (isToday) {
             // [오늘이지만 미선택] 독자적 하이라이트: 연보라 배경 + 보라 글자
-            numStyle = "bg-[rgba(103,43,224,0.12)] text-[#672be0]";
+            numStyle = "bg-[rgba(103,43,224,0.1)] text-[#672be0] font-bold";
           } else {
             // [그 외 날짜] 기본 무채색
-            numStyle = "text-[#1a1625]";
+            numStyle = "text-[#1a1625] bg-transparent";
           }
 
-          const cellBg = isSelected
-          ? "bg-[rgba(103,43,224,0.05)]"
-            : "hover:bg-[rgba(103,43,224,0.04)]";
 
           return (
             <div
               key={dateKey}
               onClick={() => onSelectDate(new Date(date))}
               role="button"
-              tabIndex={0}
+              tabIndex={0} // tab 키로도 가능
 
               // 키보드 접근성: Enter / Space 키로도 선택 가능
               onKeyDown={(e) => {
@@ -180,7 +179,8 @@ export default function WeekList({
 
               {/* 날짜 숫자 */}
               <span className={`
-                  w-8 h-8 flex items-center justify-center
+                  w-8 h-8 flex-shrink-0 aspect-square
+                  flex items-center justify-center
                   rounded-full text-sm font-semibold
                   transition-colors duration-200
                   ${numStyle}
@@ -188,12 +188,11 @@ export default function WeekList({
 
               {/* Todo 개수 뱃지: 0개면 빈 자리로 레이아웃 유지 */}
               <span className={`
-                  text-[11px] font-medium h-4 min-w-4
+                  text-[11px] font-medium
                   flex items-center justify-center
-                  rounded-full px-1
                   transition-colors duration-200
                   ${count > 0
-                    ? "text-[#672be0] bg-[rgba(103,43,224,0.1)]"
+                    ? "text-[#672be0]"
                     : "text-transparent"
                   }
                 `}>

@@ -115,15 +115,38 @@ export default function App() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f5fb] px-4 py-6 text-[#1a1625]">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold text-[#672be0] tracking-normal italic">Todo List</h1>
-          <p className="text-sm font-medium text-[#8c82a3]">
-            {formatDateDisplay(selectedDate)}
-          </p>
+    <main
+      className="
+        min-h-screen px-4 pb-20 pt-[60px] text-[#1a1625]
+        bg-[#f7f6fb]
+        [background-image:radial-gradient(circle,#c4b5e8_1px,transparent_1px)]
+        [background-size:28px_28px]
+      "
+    >
+      <div >
+        {/* ── 1. 헤더 영역 ── */}
+        <header
+          className="
+          relative overflow-hidden rounded-[20px] border border-[#e4dfef]
+          bg-[#ffffff] py-8 pl-12 pr-9 shadow-[0_4px_24px_rgba(103,43,224,0.07)]
+          "
+        >
+          <div className="absolute left-0 top-0 h-full w-[5px] bg-gradient-to-b from-[#672be0] to-[#8a55e8]" />
+
+          <div style={{ paddingLeft: "12px" }}>
+            <h1 className="font-mono text-[2.4rem] font-medium leading-none text-[#672be0] italic">
+              Todo List
+            </h1>
+
+            <p className="mt-2.5 break-words font-mono text-[0.82rem] font-normal tracking-[0.5px] text-[#8c82a3]">
+              {completedCount}
+              {" / "}
+              {totalCount} completed
+            </p>
+          </div>
         </header>
 
+        {/* ── 2. 주간 달력 ── */}
         <WeekList
           selectedDate={selectedDate}
           weekOffset={weekOffset}
@@ -132,31 +155,41 @@ export default function App() {
           onChangeWeek={setWeekOffset}
         />
 
-        <section className="rounded-2xl border border-[#e4dfef] bg-white p-4 shadow-[0_4px_24px_rgba(103,43,224,0.07)]">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-bold">오늘의 할 일</h2>
-            <span className="text-xs font-semibold text-[#8c82a3]">
-              완료 {completedCount} / 전체 {totalCount}
+        {/* ── 3. 선택된 날짜 및 오늘 표시 뱃지 영역 ── */}
+        <section
+          className="
+            flex items-center justify-evenly rounded-[20px] border border-[#e4dfef]
+            bg-[#ffffff] px-5 py-3.5 shadow-[0_4px_24px_rgba(103,43,224,0.07)]
+          "
+        >
+          <span style= {{color: "#404040" }} className="font-mono text-[0.95rem] font-medium tracking-[0.3px] text -[#8c82a3]">
+            {formatDateDisplay(selectedDate)}
+          </span>
+
+          {selectedDateKey === formatDateKey(new Date()) && (
+            <span className="rounded-full bg-[rgba(103,43,224,0.08)] px-2 py-0.5 text-[0.72rem] font-medium tracking-[0.3px] text-[#672be0]">
+              오늘
             </span>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <TodoInput onAddTodo={handleAddTodo} />
-
-            <FilterTabs
-              currentFilter={currentFilter}
-              onChangeFilter={setCurrentFilter}
-            />
-
-            <TodoList
-              todos={filteredTodos}
-              currentFilter={currentFilter}
-              onToggleComplete={handleToggleComplete}
-              onUpdateTodo={handleUpdateTodo}
-              onDeleteTodo={handleDeleteTodo}
-            />
-          </div>
+          )}
         </section>
+
+        {/* ── 4. 할 일 입력창 ── */}
+        <TodoInput onAddTodo={handleAddTodo} />
+
+        {/* ── 5. 필터 탭 ── */}
+        <FilterTabs
+          currentFilter={currentFilter}
+          onChangeFilter={setCurrentFilter}
+        />
+
+        {/* ── 6. 할 일 리스트 ── */}
+        <TodoList
+          todos={filteredTodos}
+          currentFilter={currentFilter}
+          onToggleComplete={handleToggleComplete}
+          onUpdateTodo={handleUpdateTodo}
+          onDeleteTodo={handleDeleteTodo}
+        />
       </div>
     </main>
   );
