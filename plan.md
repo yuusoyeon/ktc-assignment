@@ -37,10 +37,14 @@ Frontend는 Next.js App Router와 Server Actions를 중심으로 화면, 라우�
 todo-nextJs-FastAPI/
 ├── frontend/
 │   ├── app/
-│   │   ├── api/todos/route.ts
+│   │   ├── api/
+│   │   │   └── todos/
+│   │   │       └── route.ts
 │   │   ├── todos/
-│   │   │   ├── [todoId]/page.tsx
-│   │   │   ├── new/page.tsx
+│   │   │   ├── [todoId]/
+│   │   │   │   └── page.tsx
+│   │   │   ├── new/
+│   │   │   │   └── page.tsx
 │   │   │   ├── error.tsx
 │   │   │   ├── loading.tsx
 │   │   │   └── page.tsx
@@ -48,12 +52,39 @@ todo-nextJs-FastAPI/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx
+│   │
+│   ├── components/
+│   │   ├── layout/
+│   │   │   ├── AppHeader.tsx
+│   │   │   └── PageShell.tsx
+│   │   └── todos/
+│   │       ├── WeekCalendar.tsx
+│   │       ├── WeekCalendarDay.tsx
+│   │       ├── TodoToolbar.tsx
+│   │       ├── SearchForm.tsx
+│   │       ├── FilterTabs.tsx
+│   │       ├── TodoList.tsx
+│   │       ├── TodoItem.tsx
+│   │       ├── TodoEmptyState.tsx
+│   │       ├── TodoCreateForm.tsx
+│   │       ├── TodoEditForm.tsx
+│   │       └── TodoSubmitButton.tsx
+│   │
+│   ├── lib/
+│   │   ├── api.ts
+│   │   ├── date.ts
+│   │   └── types.ts
+│   │
+│   ├── .env.local
+│   ├── package.json
 │   └── ...
+│
 └── backend/
     ├── main.py
     ├── requirements.txt
     └── .env.local
 ```
+
 ### Backend Plan
 `backend/main.py` 안에 FastAPI 앱, DB 연결, SQLAlchemy 모델, Pydantic 스키마, CRUD 라우터를 모두 구현한다.
 
@@ -92,8 +123,52 @@ q=검색어
 - 빈 Todo 텍스트 생성/수정 요청은 400 또는 validation error를 반환한다.
 
 ### Frontend Plan
-Next.js 라우팅은 App Router 기반으로 구성한다.
-#### Routes
+Next.js App Router 기반으로 페이지를 구성하되, `page.tsx`는 데이터 조회와 컴포넌트 조립만 담당한다. UI 로직은 `components/`, API 요청과 타입/날짜 유틸은 `lib/`로 분리한다.
+
+### Page Responsibilities
+
+`app/todos/page.tsx`
+
+- URL `searchParams`에서 `date`, `status`, `q`를 읽는다.
+- `getTodos({ date, status, q })`로 Todo 목록을 조회한다.
+- 날짜별 Todo 개수 계산에 필요한 데이터를 조회하거나 전달한다.
+- `PageShell`, `AppHeader`, `WeekCalendar`, `TodoToolbar`, `TodoList`를 조립한다.
+
+`app/todos/new/page.tsx`
+
+- URL `searchParams`에서 기본 날짜를 읽는다.
+- `TodoCreateForm`을 렌더링한다.
+- 생성 로직 자체는 `actions.ts`의 `createTodo`에 위임한다.
+
+`app/todos/[todoId]/page.tsx`
+
+- `todoId`로 Todo 상세 데이터를 조회한다.
+- `TodoEditForm`을 렌더링한다.
+- 수정 로직 자체는 `actions.ts`의 `updateTodo`에 위임한다.
+
+### Component Responsibilities
+
+- `PageShell`: 전체 페이지 배경, 최대 너비, 공통 여백
+- `AppHeader`: 앱 제목, 완료 개수 / 전체 개수 표시
+- `WeekCalendar`: 주간 날짜 계산, 이전/다음 주 이동, 날짜 선택 링크 생성
+- `WeekCalendarDay`: 날짜 한 칸 UI, 오늘/선택/기본 상태 스타일
+- `TodoToolbar`: 검색 폼과 상태 필터 탭 조립
+- `SearchForm`: 검색어 입력, 빈 검색어 에러 처리
+- `FilterTabs`: 전체 / 진행 중 / 완료 탭과 URL query 링크 생성
+- `TodoList`: 목록 또는 빈 상태 렌더링
+- `TodoItem`: 완료 토글, 수정 링크, 삭제 액션
+- `TodoEmptyState`: 조건별 빈 상태 문구 표시
+- `TodoCreateForm`: Todo 생성 폼
+- `TodoEditForm`: Todo 수정 폼
+- `TodoSubmitButton`: form 제출 중 상태 표시
+
+### Shared Lib Responsibilities
+
+- `lib/api.ts`: FastAPI fetch wrapper와 Todo API 요청 함수
+- `lib/date.ts`: `formatDateKey`, `getMonday`, `getWeekDates`, 주차 이동 유틸
+- `lib/types.ts`: `Todo`, `TodoStatus`, API 요청/응답 타입
+
+### Routes
 ```text
 /todos             Todo 목록 페이지
 /todos/new         Todo 생성 페이지
@@ -234,3 +309,6 @@ Todo 수정 페이지다.
 - 인증, 사용자 계정, 배포 설정은 이번 범위에 포함하지 않는다.
 - Backend는 main.py 하나에 모든 로직을 작성한다.
 - Frontend는 제공된 App Router 구조를 유지한다.
+- `page.tsx`는 UI 세부 구현을 직접 포함하지 않고, 데이터 조회와 컴포넌트 조립만 담당한다.
+- Client Component는 입력 상태, form pending 상태, 삭제 애니메이션처럼 브라우저 상태가 필요한 경우에만 사용한다.
+- URL query string을 날짜, 필터, 검색 상태의 source of truth로 사용한다.
