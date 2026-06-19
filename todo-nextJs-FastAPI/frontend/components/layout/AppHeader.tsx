@@ -22,7 +22,9 @@ export default function AppHeader({
         </h1>
 
         <p className="mt-2.5 font-mono text-[0.82rem] font-normal tracking-[0.5px] text-[#8c82a3]">
-          {completedCount}
+          <span className="font-medium text-[#672be0]">
+            {completedCount}
+          </span>
           {" / "}
           {totalCount} completed
         </p>

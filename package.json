@@ -1,0 +1,25 @@
+{
+  "name": "ktc-assignment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuusoyeon/ktc-assignment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yuusoyeon/ktc-assignment/issues"
+  },
+  "homepage": "https://github.com/yuusoyeon/ktc-assignment#readme",
+  "devDependencies": {
+    "husky": "^8.0.0"
+  }
+}
