@@ -37,8 +37,8 @@ export default async function TodoEditPage({ params }: {
           {todo.date}
         </p>
 
-        <h1 className="font-mono text-[2rem] font-medium leading-none text-[#1a1625]">
-          Todo 수정
+        <h1 className="text-[2rem] font-bold leading-none text-[#6b4cb3]">
+        Todo 수정
         </h1>
       </section>
 

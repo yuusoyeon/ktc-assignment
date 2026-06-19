@@ -1,0 +1,26 @@
+#.husky/pre-push
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🐕 [Husky] 루트에서 프론트/백엔드 전체 자동 검사를 시작합니다..."
+
+echo "🎨 [프론트엔드] Playwright E2E 테스트 시작..."
+cd frontend
+npx playwright test --project=chromium
+
+if [ $? -ne 0 ]; then
+  echo "❌ 프론트엔드 테스트 실패로 push를 중단합니다."
+  exit 1
+fi
+
+echo "🐍 [백엔드] Pytest API 테스트 시작..."
+cd ../backend
+
+pytest
+
+if [ $? -ne 0 ]; then
+  echo "❌ 백엔드 테스트 실패로 push를 중단합니다."
+  exit 1
+fi
+
+echo "✅ [Husky] 모든 테스트 통과! 안심하고 push를 진행합니다. 😎"

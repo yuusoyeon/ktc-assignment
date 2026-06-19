@@ -17,7 +17,7 @@ export default function AppHeader({
       <div className="absolute left-0 top-0 h-full w-[5px] rounded-l bg-gradient-to-b from-[#672be0] to-[#8a55e8]" />
 
       <div className="pl-2">
-        <h1 className="font-mono text-[2.4rem] font-medium leading-none text-[#1a1625]">
+        <h1 className="text-[2.4rem] font-bold leading-none text-[#6b4cb3]">
           Todo<span className="text-[#672be0]">.</span>
         </h1>
 
