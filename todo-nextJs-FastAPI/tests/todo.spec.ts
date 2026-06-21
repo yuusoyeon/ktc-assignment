@@ -11,7 +11,6 @@ test('test', async ({ page }) => {
   await page.getByRole('textbox', { name: '할 일' }).click();
   await page.getByRole('textbox', { name: '할 일' }).fill('알바');
   await page.getByRole('button', { name: '저장' }).click();
-  await page.getByText('알바수정삭제').click();
   await page.getByRole('button', { name: '완료 상태 변경' }).click();
   await page.getByRole('link', { name: '이전 주' }).click();
   await page.getByText('월80화90수100목111금120토130일').click();

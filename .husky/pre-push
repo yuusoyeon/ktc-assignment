@@ -2,10 +2,10 @@
 
 echo "[Husky] pre-push running"
 
-cd todo-nextJs-FastAPI/frontend || exit 1
+cd todo-nextJs-FastAPI || exit 1
 npx playwright test --project=chromium || exit 1
 
-cd ../backend || exit 1
+cd backend || exit 1
 pytest || exit 1
 
 echo "[Husky] all tests passed"

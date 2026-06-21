@@ -1,12 +1,77 @@
 from datetime import datetime,timezone
-import os
+import os, logging, time
 from typing import Literal, Optional
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
+
+app = FastAPI(title="Todo API")
+
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+
+log_format = "[%(asctime)s] %(levelname)s - %(message)s"
+
+logger = logging.getLogger("todo_logger")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+if not logger.handlers:
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(logging.Formatter(log_format))
+
+    file_handler = RotatingFileHandler(
+        LOG_DIR / "server.log",
+        maxBytes=1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.perf_counter()
+
+    logger.info(
+        "Incoming Request: %s %s",
+        request.method,
+        request.url.path,
+    )
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        process_time = time.perf_counter() - start_time
+
+        logger.exception(
+            "Request Failed: %s %s | Took %.4fs",
+            request.method,
+            request.url.path,
+            process_time,
+        )
+
+        raise
+
+    process_time = time.perf_counter() - start_time
+
+    logger.info(
+        "Outgoing Response: %s %s | Status %s | Took %.4fs",
+        request.method,
+        request.url.path,
+        response.status_code,
+        process_time,
+    )
+
+    return response
 
 try: 
   from dotenv import load_dotenv
@@ -63,7 +128,6 @@ class TodoResponse(BaseModel):
   
 TodoStatus = Literal["all", "active", "completed"]
 
-app = FastAPI(title="Todo API")
 
 app.add_middleware(
     CORSMiddleware,
